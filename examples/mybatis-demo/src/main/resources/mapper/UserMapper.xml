@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mapper namespace="org.openjtrace.example.mybatis.UserMapper">
+    <select id="selectById" resultType="int">
+        SELECT id FROM user WHERE id = #{id}
+    </select>
+</mapper>
