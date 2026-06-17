@@ -66,4 +66,37 @@ public class DependencyGraphTest {
         assertEquals("MQ:payment-topic", path.get(1));
         assertEquals("PaymentListener#onMessage", path.get(2));
     }
+
+    @Test
+    public void testCircularDependencyLoop() {
+        DependencyGraph graph = new DependencyGraph();
+
+        // 构造一个 A <-> B 的互相调用环路，并且外部由 C 触发调用了 A
+        Node nodeA = new Node("A", Node.NodeType.METHOD, "methodA");
+        Node nodeB = new Node("B", Node.NodeType.METHOD, "methodB");
+        Node nodeC = new Node("C", Node.NodeType.METHOD, "methodC");
+
+        graph.addNode(nodeA);
+        graph.addNode(nodeB);
+        graph.addNode(nodeC);
+
+        graph.addEdge(new Edge("C", "A", Edge.EdgeType.CALLS));
+        graph.addEdge(new Edge("A", "B", Edge.EdgeType.CALLS));
+        graph.addEdge(new Edge("B", "A", Edge.EdgeType.CALLS)); // 环路边
+
+        // 假设 B 发生了变更，逆向追踪上游受波及的路径
+        List<List<String>> paths = graph.findImpactedPaths("B");
+
+        // 验证没有出现死循环，且成功找回了起始调用点 C
+        assertFalse(paths.isEmpty(), "波及路径不应为空");
+        // 因为有环路，且 BFS 全局去重，最终链路应该包含 C -> A -> B
+        boolean foundC = false;
+        for (List<String> p : paths) {
+            if (p.contains("C") && p.contains("A") && p.contains("B")) {
+                foundC = true;
+                break;
+            }
+        }
+        assertTrue(foundC, "应该能够成功穿透环路追溯到根源 C");
+    }
 }
