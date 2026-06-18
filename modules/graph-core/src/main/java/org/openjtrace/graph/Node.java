@@ -27,7 +27,9 @@ public class Node {
         DUBBO_SERVICE,
         DUBBO_REFERENCE,
         SQL_QUERY,
-        MQ_TOPIC
+        MQ_TOPIC,
+        REDIS_CACHE,
+        MONGO_COLLECTION
     }
 
     private String id;
