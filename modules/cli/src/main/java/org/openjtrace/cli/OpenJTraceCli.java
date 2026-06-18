@@ -119,6 +119,14 @@ public class OpenJTraceCli {
         org.openjtrace.analyzer.mq.MqAnalyzer mqAnalyzer = new org.openjtrace.analyzer.mq.MqAnalyzer();
         mqAnalyzer.analyze(classMetas, graph);
 
+        // 3.5 Redis 缓存关联分析
+        org.openjtrace.analyzer.redis.RedisAnalyzer redisAnalyzer = new org.openjtrace.analyzer.redis.RedisAnalyzer();
+        redisAnalyzer.analyze(classMetas, graph);
+
+        // 3.6 MongoDB 依赖关联分析
+        org.openjtrace.analyzer.mongodb.MongoAnalyzer mongoAnalyzer = new org.openjtrace.analyzer.mongodb.MongoAnalyzer();
+        mongoAnalyzer.analyze(classMetas, graph);
+
         System.out.println("   图构建完毕: 节点数 = " + graph.getNodes().size() + ", 边数 = " + graph.getEdges().size());
 
         // 4. 逆向寻找变更影响路径

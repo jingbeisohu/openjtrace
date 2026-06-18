@@ -30,6 +30,8 @@
         <module>modules/analyzer-dubbo</module>
         <module>modules/analyzer-mybatis</module>
         <module>modules/analyzer-mq</module>
+        <module>modules/analyzer-redis</module>
+        <module>modules/analyzer-mongodb</module>
         <module>modules/report-html</module>
         <module>modules/cli</module>
     </modules>
@@ -70,6 +72,16 @@
             <dependency>
                 <groupId>org.openjtrace</groupId>
                 <artifactId>analyzer-mq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjtrace</groupId>
+                <artifactId>analyzer-redis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjtrace</groupId>
+                <artifactId>analyzer-mongodb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

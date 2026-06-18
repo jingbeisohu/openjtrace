@@ -256,6 +256,8 @@
         .step-dot.rpc { background-color: #a855f7; }
         .step-dot.sql { background-color: var(--warning-color); }
         .step-dot.mq { background-color: var(--success-color); }
+        .step-dot.redis { background-color: #ef4444; }
+        .step-dot.mongo { background-color: #059669; }
         .step-dot.method { background-color: #64748b; }
 
         .step-content {
@@ -350,6 +352,14 @@
                     <span>消息队列主题 (RocketMQ/RabbitMQ)</span>
                 </div>
                 <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ef4444;"></div>
+                    <span>Redis 缓存 / 键前缀</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #059669;"></div>
+                    <span>MongoDB 集合 (Collection)</span>
+                </div>
+                <div class="legend-item">
                     <div class="legend-color" style="background-color: #64748b;"></div>
                     <span>Java 方法 / 业务实现</span>
                 </div>
@@ -415,6 +425,14 @@
                 case 'MQ_TOPIC':
                     color = '#10b981';
                     shape = 'octagon';
+                    break;
+                case 'REDIS_CACHE':
+                    color = '#ef4444';
+                    shape = 'barrel';
+                    break;
+                case 'MONGO_COLLECTION':
+                    color = '#059669';
+                    shape = 'barrel';
                     break;
             }
             return { color, shape, size: 30 };
@@ -537,6 +555,8 @@
                     else if (node.type === 'DUBBO_REFERENCE' || node.type === 'DUBBO_SERVICE') dotClass = 'rpc';
                     else if (node.type === 'SQL_QUERY') dotClass = 'sql';
                     else if (node.type === 'MQ_TOPIC') dotClass = 'mq';
+                    else if (node.type === 'REDIS_CACHE') dotClass = 'redis';
+                    else if (node.type === 'MONGO_COLLECTION') dotClass = 'mongo';
 
                     step.innerHTML = `
                         <div class="step-dot ${dotClass}"></div>

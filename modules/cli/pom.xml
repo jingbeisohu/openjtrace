@@ -44,6 +44,14 @@
         </dependency>
         <dependency>
             <groupId>org.openjtrace</groupId>
+            <artifactId>analyzer-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjtrace</groupId>
+            <artifactId>analyzer-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjtrace</groupId>
             <artifactId>report-html</artifactId>
         </dependency>
 
