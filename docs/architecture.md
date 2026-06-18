@@ -24,6 +24,8 @@ graph TD
     AnalyzerHTTP["analyzer-http (Spring Controller / Feign)"] --> |Create HTTP Nodes & Calls edges| GraphCore
     AnalyzerDubbo["analyzer-dubbo (RPC Pub/Sub)"] --> |Create Dubbo Service/Reference edges| GraphCore
     AnalyzerMQ["analyzer-mq (MQ Pub/Sub)"] --> |Create MQ Producer/Consumer edges| GraphCore
+    AnalyzerRedis["analyzer-redis (Spring Cache / RedisTemplate)"] --> |Create Redis Cache Nodes & Calls edges| GraphCore
+    AnalyzerMongo["analyzer-mongodb (MongoRepository / MongoTemplate)"] --> |Create Mongo Collection Nodes & MapsTo/Calls edges| GraphCore
 
     %% Query Engine (CLI)
     GraphCore --> |Query affected paths| Cli["cli (OpenJTraceCli)"]
@@ -38,9 +40,9 @@ graph TD
 * **职责**：定义图的内存模型。
 * **主要概念**：
   * `Node` (节点)：代表代码或配置实体。
-    * 类型：`METHOD`（普通方法）、`HTTP_API`（HTTP 端点）、`DUBBO_SERVICE`（Dubbo 服务端实现）、`DUBBO_REFERENCE`（Dubbo 客户端接口引用）、`SQL_QUERY`（MyBatis XML 中的具体 SQL 映射语句）。
+    * 类型：`METHOD`（普通方法）、`HTTP_API`（HTTP 端点）、`DUBBO_SERVICE`（Dubbo 服务端实现）、`DUBBO_REFERENCE`（Dubbo 客户端接口引用）、`SQL_QUERY`（MyBatis XML 中的具体 SQL 映射语句）、`MQ_TOPIC`（消息主题）、`REDIS_CACHE`（Redis 缓存分区或 Key 前缀）及 `MONGO_COLLECTION`（MongoDB 集合）。
   * `Edge` (边)：代表节点之间的依赖关系。
-    * 类型：`CALLS`（方法间调用）、`IMPLEMENTS`（接口实现）、`MAPS_TO`（Mapper 接口方法映射至 XML SQL）、`RPC_LINK`（Dubbo 消费端跨仓连接至服务端实现）。
+    * 类型：`CALLS`（方法间调用/对中间件的操作）、`IMPLEMENTS`（接口实现）、`MAPS_TO`（Mapper/Repository 接口方法映射至 XML SQL 或 MongoDB 集合）、`RPC_LINK`（Dubbo 消费端跨仓连接至服务端实现）。
   * `DependencyGraph`：图操作类，支持图的构建、序列化、正向链路追踪以及逆向受影响路径查找。
 
 ### 2. `parser-maven` (Maven 工程依赖解析器)
@@ -73,7 +75,19 @@ graph TD
   * 提取其中的 `<select/insert/update/delete id="selectById">` 等 SQL 节点。
   * 在依赖图中，将对应的 Java Mapper 接口方法 `UserMapper.selectById()` 指向 SQL 节点。
 
-### 7. `cli` (命令行入口) 与 `report-html` (交互式报告)
+### 7. `analyzer-redis` (Redis 缓存依赖分析器)
+* **职责**：分析方法级的 Redis 缓存读写操作及缓存分区依赖。
+* **实现**：
+  * 提取类或方法上标注的 `@Cacheable`、`@CachePut`、`@CacheEvict` 等 Spring Cache 注解，解析其 `value` 或 `cacheNames` 属性，构建 `REDIS_CACHE` 节点。
+  * 识别方法内部的 `redisTemplate` 或 `stringRedisTemplate` 对 `opsForValue().set(...)` 的调用，并静态截取前缀字符串字面量作为 `REDIS_CACHE` 节点标识。
+
+### 8. `analyzer-mongodb` (MongoDB 依赖分析器)
+* **职责**：解析 MongoDB 的实体文档、Spring Data Repository 接口以及 MongoTemplate 操作的集合映射。
+* **实现**：
+  * 识别继承了 `MongoRepository<T, ID>` 的接口，提取泛型实体类 `T` 上的 `@Document(collection = "...")` 属性作为 Mongo 集合名。
+  * 扫描方法体内 `mongoTemplate` 调用（例如 `mongoTemplate.remove(..., User.class)`），通过实体的 `.class` 字面量解析出对应的 Mongo 集合。
+
+### 9. `cli` (命令行入口) 与 `report-html` (交互式报告)
 * **职责**：读取用户指定的多个本地目录，执行全量扫描生成依赖图，并支持用户针对特定的变更源进行逆向波及路径查询，最终在本地生成可视化 HTML 报告。
 
 ---
