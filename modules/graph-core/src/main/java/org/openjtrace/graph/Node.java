@@ -4,6 +4,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * <h1>依赖图节点模型 (Node)</h1>
+ * <p>
+ * 该类代表静态分析拓扑图中的实体节点。每个节点对应 Java 项目中的一个具体实体（如方法、HTTP接口、RPC服务或SQL语句）。
+ * </p>
+ * 
+ * <h3>核心节点类型 (NodeType)：</h3>
+ * <ul>
+ *   <li>{@link NodeType#METHOD} - 普通的 Java 类方法实现</li>
+ *   <li>{@link NodeType#HTTP_API} - Spring Boot Controller 暴露的 HTTP 路由端点或 Feign 远程调用接口</li>
+ *   <li>{@link NodeType#DUBBO_SERVICE} - Dubbo 提供端 (Provider) 发布的具体服务实现方法</li>
+ *   <li>{@link NodeType#DUBBO_REFERENCE} - Dubbo 消费端 (Consumer) 引入的 RPC 接口定义方法</li>
+ *   <li>{@link NodeType#SQL_QUERY} - MyBatis XML 映射文件中声明的具体 SQL 语句节点 (如 select/insert/update/delete)</li>
+ *   <li>{@link NodeType#MQ_TOPIC} - 异步消息队列 (RocketMQ/Kafka/RabbitMQ) 的消息主题或队列端点</li>
+ * </ul>
+ */
 public class Node {
     public enum NodeType {
         METHOD,

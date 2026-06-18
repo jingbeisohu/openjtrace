@@ -13,6 +13,24 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.io.File;
 import java.util.*;
 
+/**
+ * <h1>Java 源代码 AST 解析器 (JavaSourceParser)</h1>
+ * <p>
+ * 该类利用 {@code JavaParser} 库，对工作区下的所有 Java 源文件进行不编译静态分析。
+ * 通过遍历抽象语法树 (AST)，解析并收集如下重要代码元数据 (Metadata)：
+ * </p>
+ * 
+ * <ul>
+ *   <li>类属性：包名、类/接口名称、全限定名、类注解等。</li>
+ *   <li>成员变量：字段名称及其绑定的类类型（主要用于依赖注入字段的代码依赖推导）。</li>
+ *   <li>方法元数据：方法名称、方法级注解。</li>
+ *   <li>方法内部调用：扫描方法体中的 {@link MethodCallExpr}，记录每次方法调用的 scope 变量名、方法名以及传入的<b>入参表达式</b>列表。</li>
+ * </ul>
+ * 
+ * <p>
+ * 提取后的元数据封装为 {@link JavaClassMeta} 传递给后续的各个协议分析器模块。
+ * </p>
+ */
 public class JavaSourceParser {
 
     public static class JavaMethodMeta {

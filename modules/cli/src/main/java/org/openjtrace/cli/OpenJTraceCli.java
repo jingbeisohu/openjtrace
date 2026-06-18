@@ -17,6 +17,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * <h1>OpenJTrace 命令行工具主入口 (OpenJTraceCli)</h1>
+ * <p>
+ * 该类是整个工具的核心启动入口，基于 {@code JCommander} 解析命令行参数。
+ * 负责调度 Maven、Java 源码解析器以及 HTTP、Dubbo、MyBatis、MQ 各协议分析器模块。
+ * </p>
+ * 
+ * <h3>可配置命令行参数：</h3>
+ * <ul>
+ *   <li>{@code -dirs} (必填) - 待分析的项目或多个本地 Git 仓库路径列表，逗号分隔</li>
+ *   <li>{@code -target} (必填) - 代码或 SQL 变更的起点节点 ID</li>
+ *   <li>{@code -output} (可选) - 本地 HTML 影响分析报告输出路径</li>
+ * </ul>
+ * 
+ * <h3>核心运行管道 (Pipeline)：</h3>
+ * <ol>
+ *   <li>扫描目标目录，解析所有的 {@code pom.xml} 并注册 Maven 拓扑。</li>
+ *   <li>静态扫描目录下的所有 Java 源文件，生成抽象语法树 (AST)。</li>
+ *   <li>启动并运行 HTTP、Dubbo、MyBatis、MQ 分析器，对提取出的方法、接口与 SQL 建立关联边。</li>
+ *   <li>从传入的 {@code -target} 起点开始，沿图的反向邻接表运行 BFS 拓扑算法，计算出受波及的完整链条。</li>
+ *   <li>在终端中格式化输出调用路径树，若指定了 {@code -output}，则生成交互式 HTML 可视化分析报告。</li>
+ * </ol>
+ */
 public class OpenJTraceCli {
 
     @Parameter(names = "-dirs", description = "需要扫描的仓库或项目目录，多个以逗号分隔", required = true)

@@ -9,6 +9,30 @@ import org.openjtrace.parser.java.JavaSourceParser.JavaMethodMeta;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * <h1>Dubbo RPC 协议依赖分析器 (DubboAnalyzer)</h1>
+ * <p>
+ * 该类用于静态识别和连接分布式架构中的 Dubbo RPC 调用链路。
+ * </p>
+ * 
+ * <h3>核心解析逻辑：</h3>
+ * <ul>
+ *   <li>
+ *     <b>提供端服务识别 (Provider)：</b>
+ *     扫描标注有 {@code @DubboService} 或 {@code @Service} 注解的类，
+ *     识别其实现的所有接口类，并将其作为 Dubbo 服务端点注册。
+ *   </li>
+ *   <li>
+ *     <b>消费端引用识别 (Consumer)：</b>
+ *     通过全局类方法调用提取，记录消费端以成员变量依赖注入形式引用的接口类及方法。
+ *   </li>
+ *   <li>
+ *     <b>跨仓 RPC 边关联 (RPC_LINK)：</b>
+ *     将消费端调用“接口方法”的行为，通过接口全限定名直接对齐到服务端具体实现类的“实现方法”上，
+ *     在两个物理隔离的类之间建立 RPC_LINK 类型的关联边，实现跨仓库链路穿透。
+ *   </li>
+ * </ul>
+ */
 public class DubboAnalyzer {
 
     public void analyze(List<JavaClassMeta> classes, DependencyGraph graph) {
