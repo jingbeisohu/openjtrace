@@ -10,6 +10,19 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.*;
 
+/**
+ * <h1>Maven 项目工程结构解析器 (MavenProjectParser)</h1>
+ * <p>
+ * 该类负责静态遍历和扫描指定的本地目录，定位所有的 {@code pom.xml} 文件。
+ * 利用 W3C XML DOM 解析器提取每个模块的 GAV (GroupId, ArtifactId, Version) 坐标，
+ * 继承 Parent 模块坐标，并搜集子模块下的所有的依赖库信息。
+ * </p>
+ * 
+ * <p>
+ * 该模块的作用是建立多仓/多模块的物理坐标清单，支持后续静态分析将独立的微服务工程节点
+ * 映射到统一的 Maven 依赖管理边界空间内。
+ * </p>
+ */
 public class MavenProjectParser {
 
     public static class MavenModule {

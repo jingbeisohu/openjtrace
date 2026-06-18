@@ -12,6 +12,30 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.List;
 
+/**
+ * <h1>MyBatis Mapper 数据库依赖分析器 (MyBatisAnalyzer)</h1>
+ * <p>
+ * 该类用于扫描和静态解析指定目录下的所有 MyBatis XML 映射文件。
+ * </p>
+ * 
+ * <h3>具体解析流：</h3>
+ * <ul>
+ *   <li>
+ *     读取 XML 头并验证根节点为 {@code <mapper>}。
+ *   </li>
+ *   <li>
+ *     提取 {@code namespace} 属性（绑定 Java Mapper 接口全限定名）。
+ *   </li>
+ *   <li>
+ *     遍历所有的 SQL 语句子元素（{@code <select>}, {@code <insert>}, {@code <update>}, {@code <delete>}），
+ *     提取它们的 {@code id}，在依赖图中创建 {@link Node.NodeType#SQL_QUERY} 类型的叶子节点。
+ *   </li>
+ *   <li>
+ *     通过 MAPS_TO 关联边，建立从 Java Mapper 接口的方法节点直接指向 XML 具体 SQL 语句的边，
+ *     打通代码修改与底层数据库 SQL 的影响链条。
+ *   </li>
+ * </ul>
+ */
 public class MyBatisAnalyzer {
 
     public void analyze(List<File> dirs, DependencyGraph graph) {

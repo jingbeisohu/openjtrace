@@ -10,6 +10,26 @@ import org.openjtrace.parser.java.JavaSourceParser.MethodCall;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * <h1>HTTP 协议调用链分析器 (HttpAnalyzer)</h1>
+ * <p>
+ * 该类负责分析 Java 源码中的 HTTP 远程调用与路由暴露端点。
+ * </p>
+ * 
+ * <h3>具体分析范畴：</h3>
+ * <ul>
+ *   <li>
+ *     <b>Spring Controller 端点分析：</b>
+ *     识别类或方法上的 {@code @RestController}、{@code @Controller} 以及 {@code @RequestMapping}（包括 Get/Post/Put/Delete 等 Mapping）。
+ *     计算拼接出绝对的端点路径，并在图上注册 {@link Node.NodeType#HTTP_API} 节点与对应 Controller 方法的依赖关联。
+ *   </li>
+ *   <li>
+ *     <b>Feign 客户端远程调用分析：</b>
+ *     识别被 {@code @FeignClient} 标记的接口方法，匹配它们声明的 HTTP API 请求路径与请求方式，
+ *     在图中连接 Feign 接口方法到实际 HTTP_API 端点的调用依赖。
+ *   </li>
+ * </ul>
+ */
 public class HttpAnalyzer {
 
     public void analyze(List<JavaClassMeta> classes, DependencyGraph graph) {

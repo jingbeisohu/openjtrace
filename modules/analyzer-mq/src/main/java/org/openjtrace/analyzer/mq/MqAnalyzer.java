@@ -9,6 +9,26 @@ import org.openjtrace.parser.java.JavaSourceParser.MethodCall;
 
 import java.util.List;
 
+/**
+ * <h1>异步消息队列关联分析器 (MqAnalyzer)</h1>
+ * <p>
+ * 该类通过静态分析 Java 源代码，打通基于 RabbitMQ、RocketMQ 和 Kafka 的异步调用链路。
+ * </p>
+ * 
+ * <h3>解析机制：</h3>
+ * <ul>
+ *   <li>
+ *     <b>消息消费端检测 (Consumer)：</b>
+ *     识别类或方法上的 {@code @RocketMQMessageListener} 或 {@code @RabbitListener} 注解，
+ *     从中提取出监听的主题（Topic）或队列（Queue）的常量名，并将该主题/队列关联至对应的消费 Handler 方法上。
+ *   </li>
+ *   <li>
+ *     <b>消息发送端检测 (Producer)：</b>
+ *     扫描方法体内的调用，寻找调用的方法名包含 {@code send} / {@code convertAndSend} 并且 scope 包含 {@code template} (如 {@code rabbitTemplate}) 的 MethodCall。
+ *     静态解析其传入的第一个参数（即 Topic/Queue 名称常量），并在图中建立从“发送者方法”指向“消息主题节点”的有向调用边。
+ *   </li>
+ * </ul>
+ */
 public class MqAnalyzer {
     
     public void analyze(List<JavaClassMeta> classes, DependencyGraph graph) {

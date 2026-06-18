@@ -2,6 +2,25 @@ package org.openjtrace.graph;
 
 import java.util.*;
 
+/**
+ * <h1>全局依赖关联图管理器 (DependencyGraph)</h1>
+ * <p>
+ * 该类是 OpenJTrace 内存核心图的承载容器，负责管理扫描到的所有节点和有向边。
+ * 同时维护了正向邻接表（outgoingEdges）和反向邻接表（incomingEdges）以确保高效率的图查询。
+ * </p>
+ * 
+ * <h3>核心图算法说明：</h3>
+ * <ul>
+ *   <li>
+ *     <b>逆向变更波及查找 (findImpactedPaths)：</b>
+ *     从变更目标节点开始，沿着<b>入边方向 (反向邻接表)</b> 逆向搜索。
+ *     采用基于队列的 <b>BFS (广度优先搜索) 算法</b>进行层次遍历，
+ *     并配合全局 visited 集合实现防环去重剪枝。
+ *     该机制彻底规避了大型微服务架构中循环依赖可能引起的指数级路径爆炸及 StackOverflow 风险，
+ *     可在线性 $O(V + E)$ 时间内稳定输出最短路径链条。
+ *   </li>
+ * </ul>
+ */
 public class DependencyGraph {
     private Map<String, Node> nodes = new HashMap<>();
     private Set<Edge> edges = new HashSet<>();
