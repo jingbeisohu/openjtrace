@@ -158,8 +158,11 @@ public class RedisAnalyzer {
     private String cleanLiteral(String expr) {
         if (expr == null) return "";
         String clean = expr.trim();
-        if (clean.startsWith("\"") && clean.endsWith("\"")) {
-            return clean.substring(1, clean.length() - 1);
+        if (clean.startsWith("\"")) {
+            int secondQuote = clean.indexOf("\"", 1);
+            if (secondQuote != -1) {
+                return clean.substring(1, secondQuote);
+            }
         }
         return "";
     }

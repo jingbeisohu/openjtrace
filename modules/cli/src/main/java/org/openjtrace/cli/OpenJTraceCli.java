@@ -45,8 +45,11 @@ public class OpenJTraceCli {
     @Parameter(names = "-dirs", description = "需要扫描的仓库或项目目录，多个以逗号分隔", required = true)
     private String dirs;
 
-    @Parameter(names = "-target", description = "变更影响分析的起点节点 ID (如: org.example.UserMapper#selectById 或 SQL:org.example.UserMapper#selectById)", required = true)
+    @Parameter(names = "-target", description = "变更影响分析的起点节点 ID (如: org.example.UserMapper#selectById 或 SQL:org.example.UserMapper#selectById)", required = false)
     private String target;
+
+    @Parameter(names = "--git-diff", description = "基于 Git Diff 的靶向代码变更影响分析，参数可以是分支名或 commit (如: master 或 HEAD~1)。对比本地未提交修改请使用 HEAD", required = false)
+    private String gitDiff;
 
     @Parameter(names = "-output", description = "HTML 影响报告输出路径", required = false)
     private String output;
@@ -68,6 +71,10 @@ public class OpenJTraceCli {
 
     public void run() throws Exception {
         System.out.println("====== [OpenJTrace] 开始扫描与分析 ======");
+
+        if ((target == null || target.trim().isEmpty()) && (gitDiff == null || gitDiff.trim().isEmpty())) {
+            throw new IllegalArgumentException("必须提供分析起点 -target 或指定 --git-diff 参数！");
+        }
         
         List<File> scanDirs = new ArrayList<>();
         for (String dir : dirs.split(",")) {
@@ -129,17 +136,93 @@ public class OpenJTraceCli {
 
         System.out.println("   图构建完毕: 节点数 = " + graph.getNodes().size() + ", 边数 = " + graph.getEdges().size());
 
+        // 3.7 自动推导变更 Targets
+        List<String> targetList = new ArrayList<>();
+        if (gitDiff != null && !gitDiff.trim().isEmpty()) {
+            System.out.println("\n[3.7] 基于 Git Diff 自动推导变更 Targets (Ref = " + gitDiff + ")...");
+            List<GitDiffResolver.FileDiff> diffs = GitDiffResolver.resolveDiff(scanDirs, gitDiff);
+            System.out.println("   解析到 Git Diff 变动文件数: " + diffs.size());
+            
+            for (GitDiffResolver.FileDiff fd : diffs) {
+                File f = new File(fd.getFilePath());
+                if (!f.exists()) continue;
+
+                if (f.getName().endsWith(".java")) {
+                    try {
+                        JavaSourceParser.JavaClassMeta classMeta = javaParser.parseJavaFile(f);
+                        if (classMeta != null) {
+                            boolean methodMatched = false;
+                            for (JavaSourceParser.JavaMethodMeta method : classMeta.getMethods()) {
+                                for (int line : fd.getModifiedLines()) {
+                                    if (line >= method.getStartLine() && line <= method.getEndLine()) {
+                                        String mId = classMeta.getQualifiedName() + "#" + method.getName();
+                                        if (!targetList.contains(mId)) {
+                                            targetList.add(mId);
+                                        }
+                                        methodMatched = true;
+                                    }
+                                }
+                            }
+                            // 如果行号落入类声明内但未落入任何方法内（如改了字段），则将该类所有方法作为 target
+                            if (!methodMatched) {
+                                for (int line : fd.getModifiedLines()) {
+                                    if (line >= classMeta.getStartLine() && line <= classMeta.getEndLine()) {
+                                        for (JavaSourceParser.JavaMethodMeta method : classMeta.getMethods()) {
+                                            String mId = classMeta.getQualifiedName() + "#" + method.getName();
+                                            if (!targetList.contains(mId)) {
+                                                targetList.add(mId);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Keep scanning
+                    }
+                } else if (f.getName().endsWith(".xml")) {
+                    MyBatisXmlParser.MyBatisXmlMeta xmlMeta = MyBatisXmlParser.parseMeta(f);
+                    if (xmlMeta.getNamespace() != null) {
+                        for (MyBatisXmlParser.SqlLocation loc : xmlMeta.getSqlLocations()) {
+                            for (int line : fd.getModifiedLines()) {
+                                if (line >= loc.getStartLine() && line <= loc.getEndLine()) {
+                                    String sId = "SQL:" + xmlMeta.getNamespace() + "#" + loc.getId();
+                                    if (!targetList.contains(sId)) {
+                                        targetList.add(sId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            System.out.println("   自动推导出 " + targetList.size() + " 个变动源 (Targets): " + targetList);
+        } else {
+            targetList.add(target.trim());
+        }
+
+        if (targetList.isEmpty()) {
+            System.out.println("⚠️ 未在 Git Diff 中发现任何发生变动的 Java 方法或 MyBatis SQL ID，分析结束！");
+            return;
+        }
+
         // 4. 逆向寻找变更影响路径
-        System.out.println("\n[4/5] 逆向影响链条追溯 (Target = " + target + ")...");
-        List<List<String>> paths = graph.findImpactedPaths(target);
+        System.out.println("\n[4/5] 逆向影响链条追溯...");
+        List<List<String>> allPaths = new ArrayList<>();
+        for (String t : targetList) {
+            System.out.println(" -> 追溯 Target = " + t);
+            List<List<String>> paths = graph.findImpactedPaths(t);
+            allPaths.addAll(paths);
+        }
         
-        if (paths.isEmpty()) {
+        if (allPaths.isEmpty()) {
             System.out.println(" 提示: 未发现受影响的上游调用链路或目标节点在图中不存在！");
         } else {
-            System.out.println(" 发现受影响的调用链路共 " + paths.size() + " 条：");
-            for (int i = 0; i < paths.size(); i++) {
+            System.out.println(" 发现受影响的调用链路共 " + allPaths.size() + " 条：");
+            for (int i = 0; i < allPaths.size(); i++) {
                 System.out.println("\n 🔗 链路 #" + (i + 1) + " (自上游接口 -> 变更源):");
-                List<String> path = paths.get(i);
+                List<String> path = allPaths.get(i);
                 for (int j = 0; j < path.size(); j++) {
                     String nodeId = path.get(j);
                     Node node = graph.getNode(nodeId);
@@ -156,7 +239,8 @@ public class OpenJTraceCli {
             System.out.println("\n[5/5] 生成可视化 HTML 报告...");
             File outFile = new File(output);
             HtmlReportGenerator reportGenerator = new HtmlReportGenerator();
-            reportGenerator.generate(graph, paths, target, outFile);
+            String combinedTarget = String.join(", ", targetList);
+            reportGenerator.generate(graph, allPaths, combinedTarget, outFile);
             System.out.println(" 报告已成功输出至: " + outFile.getAbsolutePath());
         }
 

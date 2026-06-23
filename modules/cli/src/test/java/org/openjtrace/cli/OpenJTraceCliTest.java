@@ -85,12 +85,12 @@ public class OpenJTraceCliTest {
         // 3. 验证依赖边
         String getUserCachedMethod = "org.openjtrace.example.mybatis.UserCacheService#getUserCached";
         assertTrue(graph.getEdges().stream().anyMatch(e -> 
-            e.getSource().equals(getUserCachedMethod) && e.getTarget().equals(cacheNodeId)
+            e.getSourceId().equals(getUserCachedMethod) && e.getTargetId().equals(cacheNodeId)
         ), "应建立 getUserCached 到 Redis 缓存的连接边");
 
         String updateSessionMethod = "org.openjtrace.example.mybatis.UserCacheService#updateSession";
         assertTrue(graph.getEdges().stream().anyMatch(e -> 
-            e.getSource().equals(updateSessionMethod) && e.getTarget().equals(keyNodeId)
+            e.getSourceId().equals(updateSessionMethod) && e.getTargetId().equals(keyNodeId)
         ), "应建立 updateSession 到 Redis 缓存的连接边");
     }
 
@@ -122,13 +122,13 @@ public class OpenJTraceCliTest {
         // 2. 验证 Repository 接口方法与 Collection 映射
         String repoMethodId = "org.openjtrace.example.mybatis.UserMongoRepository#findByName";
         assertTrue(graph.getEdges().stream().anyMatch(e -> 
-            e.getSource().equals(repoMethodId) && e.getTarget().equals(mongoCollectionNodeId)
+            e.getSourceId().equals(repoMethodId) && e.getTargetId().equals(mongoCollectionNodeId)
         ), "应该建立 Repository 接口方法到 Mongo Collection 的 MAPS_TO 关联边");
 
         // 3. 验证 MongoTemplate 显式调用与 Collection 关联
         String removeUserMethod = "org.openjtrace.example.mybatis.UserMongoService#removeUser";
         assertTrue(graph.getEdges().stream().anyMatch(e -> 
-            e.getSource().equals(removeUserMethod) && e.getTarget().equals(mongoCollectionNodeId)
+            e.getSourceId().equals(removeUserMethod) && e.getTargetId().equals(mongoCollectionNodeId)
         ), "应该建立 MongoTemplate 显式调用到 Mongo Collection 的 CALLS 关联边");
 
         // 4. 验证完整链路追踪：Service 方法 到 Mongo Collection (通过 Repository)
@@ -145,5 +145,37 @@ public class OpenJTraceCliTest {
             }
         }
         assertTrue(linkFound, "应该能逆向发现从 Service 经过 Repository 接口到达 Mongo 集合的影响链");
+    }
+
+    @Test
+    public void testMyBatisXmlParser() throws Exception {
+        File examplesDir = new File("../../examples");
+        if (!examplesDir.exists()) {
+            examplesDir = new File("examples");
+        }
+        File xmlFile = new File(examplesDir, "mybatis-demo/src/main/resources/mapper/UserMapper.xml");
+        assertTrue(xmlFile.exists(), "UserMapper.xml 应该存在于工作区中");
+
+        MyBatisXmlParser.MyBatisXmlMeta meta = MyBatisXmlParser.parseMeta(xmlFile);
+        assertEquals("org.openjtrace.example.mybatis.UserMapper", meta.getNamespace());
+        assertFalse(meta.getSqlLocations().isEmpty(), "解析出的 SQL 位置不应为空");
+
+        for (MyBatisXmlParser.SqlLocation loc : meta.getSqlLocations()) {
+            assertNotNull(loc.getId());
+            assertTrue(loc.getStartLine() > 0);
+            assertTrue(loc.getEndLine() >= loc.getStartLine());
+        }
+    }
+
+    @Test
+    public void testGitDiffResolver() {
+        File examplesDir = new File("../../examples");
+        if (!examplesDir.exists()) {
+            examplesDir = new File("examples");
+        }
+        File repoRoot = examplesDir.getParentFile();
+        List<GitDiffResolver.FileDiff> diffs = GitDiffResolver.resolveDiff(List.of(repoRoot), "HEAD");
+        assertNotNull(diffs);
+        System.out.println("GitDiffResolver parsed diffs size: " + diffs.size());
     }
 }

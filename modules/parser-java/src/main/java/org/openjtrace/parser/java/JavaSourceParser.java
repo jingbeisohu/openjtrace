@@ -37,6 +37,8 @@ public class JavaSourceParser {
         private String name;
         private Map<String, String> annotations = new HashMap<>();
         private List<MethodCall> methodCalls = new ArrayList<>();
+        private int startLine;
+        private int endLine;
 
         public String getName() {
             return name;
@@ -48,6 +50,22 @@ public class JavaSourceParser {
 
         public List<MethodCall> getMethodCalls() {
             return methodCalls;
+        }
+
+        public int getStartLine() {
+            return startLine;
+        }
+
+        public void setStartLine(int startLine) {
+            this.startLine = startLine;
+        }
+
+        public int getEndLine() {
+            return endLine;
+        }
+
+        public void setEndLine(int endLine) {
+            this.endLine = endLine;
         }
     }
 
@@ -92,6 +110,8 @@ public class JavaSourceParser {
         private List<JavaMethodMeta> methods = new ArrayList<>();
         private Map<String, String> fieldTypes = new HashMap<>(); // fieldName -> ClassType
         private File file;
+        private int startLine;
+        private int endLine;
 
         public String getPackageName() {
             return packageName;
@@ -123,6 +143,22 @@ public class JavaSourceParser {
 
         public File getFile() {
             return file;
+        }
+
+        public int getStartLine() {
+            return startLine;
+        }
+
+        public void setStartLine(int startLine) {
+            this.startLine = startLine;
+        }
+
+        public int getEndLine() {
+            return endLine;
+        }
+
+        public void setEndLine(int endLine) {
+            this.endLine = endLine;
         }
     }
 
@@ -166,6 +202,10 @@ public class JavaSourceParser {
         classMeta.file = file;
         classMeta.isInterface = classDecl.isInterface();
         classMeta.className = classDecl.getNameAsString();
+        classDecl.getRange().ifPresent(range -> {
+            classMeta.setStartLine(range.begin.line);
+            classMeta.setEndLine(range.end.line);
+        });
         
         cu.getPackageDeclaration().ifPresent(pd -> {
             classMeta.packageName = pd.getNameAsString();
@@ -205,6 +245,10 @@ public class JavaSourceParser {
         for (MethodDeclaration method : classDecl.getMethods()) {
             JavaMethodMeta methodMeta = new JavaMethodMeta();
             methodMeta.name = method.getNameAsString();
+            method.getRange().ifPresent(range -> {
+                methodMeta.setStartLine(range.begin.line);
+                methodMeta.setEndLine(range.end.line);
+            });
 
             // 收集方法注解
             for (AnnotationExpr ann : method.getAnnotations()) {
