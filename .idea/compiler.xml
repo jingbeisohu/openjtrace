@@ -11,7 +11,9 @@
         <module name="cli" />
         <module name="analyzer-mq" />
         <module name="report-html" />
+        <module name="analyzer-mongodb" />
         <module name="analyzer-dubbo" />
+        <module name="analyzer-redis" />
         <module name="parser-maven" />
         <module name="graph-core" />
         <module name="parser-java" />

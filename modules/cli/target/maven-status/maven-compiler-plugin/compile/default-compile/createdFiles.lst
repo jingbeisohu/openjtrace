@@ -1,0 +1,6 @@
+org/openjtrace/cli/MyBatisXmlParser$SqlLocation.class
+org/openjtrace/cli/MyBatisXmlParser.class
+org/openjtrace/cli/MyBatisXmlParser$MyBatisXmlMeta.class
+org/openjtrace/cli/GitDiffResolver$FileDiff.class
+org/openjtrace/cli/GitDiffResolver.class
+org/openjtrace/cli/OpenJTraceCli.class
